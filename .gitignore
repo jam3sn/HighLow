@@ -2,3 +2,5 @@
 main.*
 .vscode
 .DS_Store
+!HighLow.gb
+HighLow.*
