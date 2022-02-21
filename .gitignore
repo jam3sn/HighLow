@@ -1,6 +1,7 @@
-!main.c
-main.*
 .vscode
 .DS_Store
-!HighLow.gb
+
+main.*
+!main.c
 HighLow.*
+!HighLow.gb
