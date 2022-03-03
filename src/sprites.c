@@ -7,12 +7,12 @@ void loadCardSprites() {
 
 void drawCardBack(uint8_t nb_start, uint8_t x, uint8_t y) {
 	// 1st, 2nd, 3rd, 4th row
-	for (uint8_t i = 0; i <= 10; i++) set_sprite_tile(i, i);
+	for (uint8_t i = 0; i <= 10; i++) set_sprite_tile(i+nb_start, i);
 	// 3rd row edge fix
-	set_sprite_tile(11, 3);
-	set_sprite_tile(12, 5);
+	set_sprite_tile(nb_start+11, 3);
+	set_sprite_tile(nb_start+12, 5);
 	// 5th row
-	for (uint8_t i = 0; i <= 2; i++) set_sprite_tile(i+13, i+19);
+	for (uint8_t i = 0; i <= 2; i++) set_sprite_tile(i+nb_start+13, i+19);
 
 	move_sprite(nb_start,    x, 	  y);
 	move_sprite(nb_start+1,  x+8,  y);
