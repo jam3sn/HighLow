@@ -2,13 +2,13 @@
 #include <stdbool.h>
 #include <rand.h>
 #include <gb/gb.h>
-#include <gbdk/font.h>
 
-#include "./sprites/blank_data.c"
-#include "./sprites/blank_map.c"
-#include "./sprites/card_back_data.c"
-#include "./sprites/start_screen_data.c"
-#include "./sprites/start_screen_map.c"
+#include "./sprites.c"
+
+#include "../sprites/blank_data.c"
+#include "../sprites/blank_map.c"
+#include "../sprites/start_screen_data.c"
+#include "../sprites/start_screen_map.c"
 
 struct {
 	uint8_t scene;
@@ -16,6 +16,11 @@ struct {
 	uint8_t comparison;
 	uint8_t playedHigher;
 } gameState;
+
+struct {
+	uint8_t animationPhase;
+	uint8_t frame;
+} roundStartState;
 
 // 0
 void startScreen() {
@@ -26,6 +31,8 @@ void startScreen() {
 
 	// roundStart scene
 	gameState.scene++;
+	roundStartState.animationPhase = 0;
+	roundStartState.frame = 0;
 }
 
 // 1
@@ -42,35 +49,24 @@ void roundStart() {
 	// Generate a random number from 1 to 10
 	gameState.comparison = ((uint8_t)rand() % 9) + 1;
 
-	// Lay cards, show arrows
-	set_sprite_data(0, 13, card_back_data);
-
-	for (uint8_t i = 0; i <= 12; i++) set_sprite_tile(i, i);
-
-	move_sprite(0, 40, 32);
-	move_sprite(1, 48, 32);
-	move_sprite(2, 56, 32);
-
-	move_sprite(3, 40, 40);
-	move_sprite(4, 48, 40);
-	move_sprite(5, 56, 40);
-
-	set_sprite_tile(13, 3);
-	move_sprite(13, 40, 48);
-	move_sprite(6, 48, 48);
-	set_sprite_tile(14, 5);
-	move_sprite(14, 56, 48);
-
-	move_sprite(7, 40, 56);
-	move_sprite(8, 48, 56);
-	move_sprite(9, 56, 56);
-
-	move_sprite(10, 40, 64);
-	move_sprite(11, 48, 64);
-	move_sprite(12, 56, 64);
-	
-	// roundInput
-	gameState.scene++;
+	switch (roundStartState.animationPhase) {
+		case 0:
+			loadCardSprites();
+			drawCardBack(0, 74, 32);
+			roundStartState.animationPhase++;
+			break;
+		case 1:
+			roundStartState.frame++;
+			drawCardBack(0, 74-roundStartState.frame, 32);
+			if (roundStartState.frame == 30) roundStartState.animationPhase++;
+			break;
+		case 2:
+			drawCardFront(0, 44, 32);
+			// roundInput
+			gameState.scene++;
+		default:
+			break;
+	}
 }
 
 // 2
@@ -91,6 +87,8 @@ void roundInput(uint8_t input) {
 
 // 3
 void roundEnd() {
+	drawCardFront(16, 94, 32);
+	
 	if ((gameState.playedHigher && gameState.comparison > gameState.number) || (!gameState.playedHigher && gameState.comparison < gameState.number)) {
 		printf("%d - You Win!\n", gameState.comparison);
 	} else {
@@ -101,37 +99,4 @@ void roundEnd() {
 
 	// roundStart
 	gameState.scene = 1;
-}
-
-void main() {
-	// Font init
-	font_init();
-
-	// Initial state
-	gameState.scene = 0;
-
-	SHOW_BKG;
-	SHOW_SPRITES;
-    DISPLAY_ON;
-
-	while (1) {
-		uint8_t input = joypad();
-
-		switch (gameState.scene) {
-			case 1:
-				roundStart();
-				break;
-			case 2:
-				roundInput(input);
-				break;
-			case 3:
-				roundEnd();
-				break;
-			default:
-				startScreen();
-				break;
-		}
-
-		wait_vbl_done();
-	}
 }
