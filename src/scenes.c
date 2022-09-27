@@ -115,7 +115,7 @@ void roundEnd() {
 			waitpad(J_A);
 
 			// Clear sprites
-			for (uint8_t i = 0; i <= 85; i++) set_sprite_tile(i, 85);
+			// for (uint8_t i = 0; i <= 85; i++) set_sprite_tile(i, 85);
 
 			// roundStart
 			gameState.scene = 1;
