@@ -1,37 +1,40 @@
 #include <gb/gb.h>
 #include <gbdk/font.h>
 
-#include "./scenes.c"
+#include "./game.c"
 
-void main() {
+void main()
+{
 	// Font init
 	font_init();
 
 	// Initial state
-	round round = {.roundNumber = 0};
-	gameState.round = round;
-	gameState.scene = 0;
+	round round = {.round_number = 0};
+	game_state.round = round;
+	game_state.scene.number = 0;
 
 	SHOW_BKG;
 	SHOW_SPRITES;
-    DISPLAY_ON;
+	DISPLAY_ON;
 
-	while (1) {
+	while (1)
+	{
 		uint8_t input = joypad();
 
-		switch (gameState.scene) {
-			case 1:
-				roundStart();
-				break;
-			case 2:
-				roundInput(input);
-				break;
-			case 3:
-				roundEnd();
-				break;
-			default:
-				startScreen();
-				break;
+		switch (game_state.scene.number)
+		{
+		case 1:
+			round_start();
+			break;
+		case 2:
+			round_input(input);
+			break;
+		case 3:
+			round_end();
+			break;
+		default:
+			start_screen();
+			break;
 		}
 
 		wait_vbl_done();
