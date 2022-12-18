@@ -92,8 +92,13 @@ void move_card(card card)
     }
 }
 
-void clear_cards()
+void clear_card(card card)
 {
-    for (uint8_t i = 0; 1 < 2; i++)
-        hide_sprite(i);
+    for (uint8_t row = 0; row < CARD_HEIGHT; row++)
+    {
+        for (uint8_t col = 0; col < CARD_WIDTH; col++)
+        {
+            hide_sprite(card.sprites[row][col]);
+        }
+    }
 }
