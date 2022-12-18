@@ -8,6 +8,8 @@ void main() {
 	font_init();
 
 	// Initial state
+	round round = {.roundNumber = 0};
+	gameState.round = round;
 	gameState.scene = 0;
 
 	SHOW_BKG;

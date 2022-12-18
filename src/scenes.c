@@ -1,26 +1,30 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <rand.h>
-#include <gb/gb.h>
 
-#include "./sprites.c"
+#include "./card.c"
 
 #include "../sprites/blank_data.c"
 #include "../sprites/blank_map.c"
 #include "../sprites/start_screen_data.c"
 #include "../sprites/start_screen_map.c"
 
+typedef struct round {
+	uint8_t roundNumber;
+	card knownCard;
+	card comparisonCard;
+	BOOLEAN playedHigher;
+} round;
+
 struct {
 	uint8_t scene;
-	uint8_t number;
-	uint8_t comparison;
-	uint8_t playedHigher;
+	round round;
 } gameState;
 
 struct {
-	uint8_t animationPhase;
+	uint8_t phase;
 	uint8_t frame;
-} roundAnimation;
+} sceneAnimation;
 
 // 0
 void startScreen() {
@@ -29,44 +33,65 @@ void startScreen() {
 
 	waitpad(J_A);
 
-	// roundStart scene
-	gameState.scene++;
-	roundAnimation.animationPhase = 0;
-	roundAnimation.frame = 0;
-}
-
-// 1
-void roundStart() {
-	// Blank screen
+	// Clear screen
 	set_bkg_data(0, 1, blank_data);
 	set_bkg_tiles(0, 0, 20, 18, blank_map);
 	set_sprite_data(85, 1, blank_data);
 
-	// Seed rand()
-	initarand(DIV_REG);
-	
-	// Generate a random number from 2 to 9
-	gameState.number = ((uint8_t)rand() % 8) + 2;
-	// Generate a random number from 1 to 10
-	gameState.comparison = ((uint8_t)rand() % 9) + 1;
+	// roundStart scene
+	gameState.scene++;
+	sceneAnimation.phase = 0;
+	sceneAnimation.frame = 0;
 
-	switch (roundAnimation.animationPhase) {
+	loadCardSprites();
+}
+
+// 1
+void roundStart() {
+	switch (sceneAnimation.phase) {
 		case 0:
-			loadCardSprites();
-			drawCardBack(0, 74, 32);
-			roundAnimation.animationPhase++;
+			// Seed ran¬d()
+			initarand(DIV_REG);
+
+			card knownCard = {
+				.x = 74,
+				.y = 32,
+				.number = ((uint8_t)rand() % 8) + 2, // Generate a random number from 2 to 9
+				.side = BACK,
+			};
+			gameState.round.knownCard = knownCard;
+
+			card comparisonCard = {
+				.x = 94,
+				.y = 32,
+				.number = ((uint8_t)rand() % 9) + 1, // Generate a random number from 1 to 10
+				.side = BACK,
+			};
+			gameState.round.comparisonCard = comparisonCard;
+
+			sceneAnimation.phase++;
 			break;
 		case 1:
-			roundAnimation.frame++;
-			drawCardBack(0, 74-roundAnimation.frame, 32);
-			if (roundAnimation.frame == 30) roundAnimation.animationPhase++;
+			initSprites(0, &gameState.round.knownCard);
+			moveCard(gameState.round.knownCard);
+			sceneAnimation.phase++;
 			break;
 		case 2:
-			drawCardFront(0, 44, 32);
+			sceneAnimation.frame++;
+			gameState.round.knownCard.x = 74-sceneAnimation.frame;
+			moveCard(gameState.round.knownCard);
+
+			if (sceneAnimation.frame == 30) sceneAnimation.phase++;
+			break;
+		case 3:
+			gameState.round.knownCard.side = FRONT;
+			initSprites(0, &gameState.round.knownCard);
+			moveCard(gameState.round.knownCard);
+
 			// roundInput
 			gameState.scene++;
-			roundAnimation.animationPhase = 0;
-			roundAnimation.frame = 0;
+			sceneAnimation.phase = 0;
+			sceneAnimation.frame = 0;
 		default:
 			break;
 	}
@@ -77,50 +102,58 @@ void roundInput(uint8_t input) {
 	bool progress = false;
 
 	if (input & J_UP) {
-		gameState.playedHigher = true;
+		gameState.round.playedHigher = true;
 		progress = true;
 	} else if (input & J_DOWN) {
-		gameState.playedHigher = false;
+		gameState.round.playedHigher = false;
 		progress = true;
 	}
 
 	// roundEnd
 	if (progress) gameState.scene++;
-	roundAnimation.animationPhase = 0;
-	roundAnimation.frame = 0;
+	sceneAnimation.phase = 0;
+	sceneAnimation.frame = 0;
 }
 
 // 3
 void roundEnd() {
-	switch (roundAnimation.animationPhase) {
+	switch (sceneAnimation.phase) {
 		case 0:
-			drawCardBack(16, 94, 32);
-			roundAnimation.animationPhase++;
+			initSprites((CARD_HEIGHT*CARD_WIDTH+1), &gameState.round.comparisonCard);
+			moveCard(gameState.round.comparisonCard);
+
+			sceneAnimation.phase++;
 			break;
 		case 1:
-			roundAnimation.frame++;
-			if (roundAnimation.frame == 60) roundAnimation.animationPhase++;
+			sceneAnimation.frame++;
+			if (sceneAnimation.frame == 60) sceneAnimation.phase++;
 			break;
 		case 2:
-			drawCardFront(16, 94, 32);
-			roundAnimation.animationPhase++;
+			gameState.round.knownCard.side = FRONT;
+			initSprites((CARD_HEIGHT*CARD_WIDTH+1), &gameState.round.comparisonCard);
+			moveCard(gameState.round.comparisonCard);
+
+			sceneAnimation.phase++;
 			break;
 		case 3:
-			if ((gameState.playedHigher && gameState.comparison > gameState.number) || (!gameState.playedHigher && gameState.comparison < gameState.number)) {
-				printf("%d - You Win!\n", gameState.comparison);
+			if ((gameState.round.playedHigher && gameState.round.comparisonCard.number > gameState.round.knownCard.number) 
+				|| (!gameState.round.playedHigher && gameState.round.comparisonCard.number < gameState.round.knownCard.number)
+			) {
+				printf("%d - You Win!\n", gameState.round.comparisonCard.number);
 			} else {
-				printf("%d - You Lose!\n", gameState.comparison);
+				printf("%d - You Lose!\n", gameState.round.comparisonCard.number);
 			}
 
 			waitpad(J_A);
 
-			// Clear sprites
-			// for (uint8_t i = 0; i <= 85; i++) set_sprite_tile(i, 85);
-
 			// roundStart
 			gameState.scene = 1;
-			roundAnimation.animationPhase = 0;
-			roundAnimation.frame = 0;
+			sceneAnimation.phase = 0;
+			sceneAnimation.frame = 0;
+			
+			clearCards();
+			printf("next round");
+			waitpad(J_B);
 		default:
 			break;
 	}
