@@ -12,6 +12,7 @@
 typedef struct round
 {
 	uint8_t round_number;
+	uint8_t round_wins;
 	card known_card;
 	card comparison_card;
 	BOOLEAN played_higher;
@@ -160,6 +161,7 @@ void round_end()
 		if ((game_state.round.played_higher && game_state.round.comparison_card.number > game_state.round.known_card.number) || (!game_state.round.played_higher && game_state.round.comparison_card.number < game_state.round.known_card.number))
 		{
 			printf("%d - You Win!\n", game_state.round.comparison_card.number);
+			game_state.round.round_wins++;
 		}
 		else
 		{
@@ -173,6 +175,7 @@ void round_end()
 		clear_bkg();
 
 		// round_start
+		game_state.round.round_number++;
 		game_state.scene.number = 1;
 		game_state.scene.phase = 0;
 		game_state.scene.frame = 0;
